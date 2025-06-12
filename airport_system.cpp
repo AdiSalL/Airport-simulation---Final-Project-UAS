@@ -2,6 +2,11 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <queue>
+#include <climits>
+#include <stack>
+#include <algorithm>
+
 
 using namespace std;
 
@@ -13,7 +18,7 @@ const int MAX_JADWAL = 20;
 // tail: menunjuk ke posisi berikutnya yang tersedia dalam antrian (juga mewakili jumlah total pesawat)
 int head;
 int tail;
-int count = 1; // dipakai di pesan tiket sebagai id
+int ticketCounter = 1; // dipakai di pesan tiket sebagai id
 
 // Struktur untuk menyimpan informasi pesawat
 // Ini merepresentasikan setiap penerbangan/pesawat dalam sistem
@@ -49,7 +54,7 @@ struct Pesawat
 
 Pesawat pesawat[MAX_JADWAL]; //deklarasi array of struct untuk menyimpan pesawat
 //Graph data jalur pesawat
-unordered_map<string, vector<Jalur>> jalurPesawat;  // simpan pesawat pada edge tertentu
+unordered_map<string, vector<Jalur>> jalurPesawat;  // simpan jalur pesawat pada edge tertentu
 
 //Disini graph dipakai untuk menghubungkan dari asal mana dan akan kemana
 void tambahJalur(string dari, string ke, int waktu) {
@@ -57,10 +62,91 @@ void tambahJalur(string dari, string ke, int waktu) {
     jalurPesawat[ke].push_back({dari, waktu});
 }
 
-// menampilkan semua data dari graph assal dan tujuan
+// Menampilkan rute tercepat dari asal ke tujuan menggunakan algoritma Dijkstra
 void tampilkanRuteTercepat(string asal, string tujuan) {
+    // Map untuk menyimpan jarak terpendek dari asal ke setiap kota
+    unordered_map<string, int> jarak;
 
+    // Map untuk menyimpan kota sebelumnya (untuk rekonstruksi rute akhir)
+    unordered_map<string, string> sebelumnya;
+
+    // Priority queue (min-heap) untuk memilih kota dengan waktu tempuh terkecil
+    priority_queue<pair<int, string>, vector<pair<int, string>>, greater<>> antrian;
+
+    // Inisialisasi semua jarak ke tak hingga (belum diketahui)
+    for (auto& kota : jalurPesawat) {
+        jarak[kota.first] = INT_MAX;
+    }
+
+    // Jarak dari kota asal ke dirinya sendiri = 0
+    jarak[asal] = 0;
+    antrian.push({0, asal}); // {waktu tempuh, nama kota}
+
+    // Selama antrian masih ada (ada kota yang belum dikunjungi)
+    while (!antrian.empty()) {
+        pair<int, string> sekarang = antrian.top(); // Ambil kota dengan waktu terkecil
+        antrian.pop(); // Hapus dari antrian
+
+        int waktuSaatIni = sekarang.first;    // Total waktu tempuh sejauh ini
+        string kotaSaatIni = sekarang.second; // Nama kota saat ini
+
+        if (kotaSaatIni == tujuan) { // Jika sudah sampai tujuan, hentikan
+            break;
+        }
+
+        // Periksa semua tetangga dari kota saat ini
+        for (Jalur& tetangga : jalurPesawat[kotaSaatIni]) {
+            int waktuBaru = waktuSaatIni + tetangga.waktu; // Total waktu jika lewat tetangga ini
+
+            // Jika rute ini lebih cepat, perbarui data
+            if (waktuBaru < jarak[tetangga.tujuan]) {
+                jarak[tetangga.tujuan] = waktuBaru;
+                sebelumnya[tetangga.tujuan] = kotaSaatIni; // kota sebelumnya
+                antrian.push({waktuBaru, tetangga.tujuan});
+            }
+        }
+    }
+
+    // Jika jarak ke tujuan tetap tak hingga, tidak ada jalur
+    if (jarak[tujuan] == INT_MAX) {
+        cout << "Tidak ada jalur dari " << asal << " ke " << tujuan << endl;
+        return;
+    }
+
+    // Rekonstruksi rute dari tujuan ke asal
+    vector<string> rute;
+    string kota = tujuan;
+
+    // Telusuri kembali dari tujuan ke asal
+    while (kota != asal) {
+        rute.push_back(kota);
+        kota = sebelumnya[kota]; // ambil kota sebelumnya
+    }
+    rute.push_back(asal);
+
+    // Balik rutenya karena dari belakang
+    reverse(rute.begin(), rute.end());
+
+    // Cetak hasil rute dan total waktu
+    cout << "Rute tercepat dari " << asal << " ke " << tujuan << ":\n";
+    for (int i = 0; i < rute.size(); i++) {
+        cout << rute[i];
+        if (i != rute.size() - 1) cout << " -> ";
+    }
+    cout << endl;
+    for(int i = 0; i <= tail; i++) {
+        if(pesawat[i].destinasi == tujuan) {
+            cout << "Berikut pesawat yang dapat anda pesan" << endl;
+              cout << "ID: " << pesawat[i].id << endl;
+                cout << "Nama: " << pesawat[i].nama << endl;
+                cout << "Jam Penerbangan: " << pesawat[i].jam_penerbangan << endl;
+                cout << "Harga Tiket: " << pesawat[i].harga_tiket << endl;
+                cout << "Destinasi Pesawat: " << pesawat[i].destinasi << endl; 
+        }
+    }
+    cout << "\nTotal waktu perjalanan: " << jarak[tujuan] << " menit\n";
 }
+
 
 // Fungsi untuk menginisialisasi sistem antrian pesawat
 // Mengatur nilai awal head dan tail ke 0 (antrian kosong)
@@ -133,13 +219,46 @@ void init(Tiket*& tiket) {
     tail = 0;                 // Mengatur posisi belakang antrian ke 0
     tiket = nullptr;          // Menginisialisasi pointer tiket ke null
 
+    // Inisialisasi data pesawat sesuai dengan destinasi dari data graph di bawahnya
     masukkanPesawat("Garuda Indonesia", 1200, 1200000, "Jakarta");
-    masukkanPesawat("Cittilink", 100, 2000000, "Jogjakarta");
-    masukkanPesawat("Air Asia", 1000, 3200000, "Bali");
-    
-    tambahJalur("Jakarta", "Bali", 320);
-    tambahJalur("Bali", "Jogjakarta", 320);
-    tambahJalur("Jogjakarta", "Bali", 320);
+    masukkanPesawat("Citilink", 1030, 950000, "Surabaya");
+    masukkanPesawat("Air Asia", 1000, 1300000, "Denpasar");
+    masukkanPesawat("Lion Air", 1330, 1100000, "Medan");
+    masukkanPesawat("Sriwijaya Air", 1400, 1150000, "Makassar");
+    masukkanPesawat("Batik Air", 900, 1000000, "Yogyakarta");
+    masukkanPesawat("Wings Air", 1230, 900000, "Balikpapan");
+    masukkanPesawat("Super Air Jet", 1430, 950000, "Pontianak");
+    masukkanPesawat("NAM Air", 1530, 1050000, "Padang");
+    masukkanPesawat("Pelita Air", 1630, 1200000, "Pekanbaru");
+    masukkanPesawat("TransNusa", 1730, 950000, "Semarang");
+
+    // Data rute bandara Indonesia beserta waktu tempuh rata-rata (dalam menit)
+    tambahJalur("Jakarta", "Surabaya", 85);
+    tambahJalur("Jakarta", "Denpasar", 110);
+    tambahJalur("Jakarta", "Medan", 135);
+    tambahJalur("Jakarta", "Makassar", 140);
+    tambahJalur("Jakarta", "Yogyakarta", 60);
+    tambahJalur("Jakarta", "Balikpapan", 110);
+    tambahJalur("Jakarta", "Pontianak", 80);
+    tambahJalur("Jakarta", "Padang", 95);
+    tambahJalur("Jakarta", "Pekanbaru", 90);
+    tambahJalur("Jakarta", "Semarang", 60);
+
+    tambahJalur("Surabaya", "Denpasar", 50);
+    tambahJalur("Surabaya", "Makassar", 90);
+    tambahJalur("Surabaya", "Balikpapan", 80);
+    tambahJalur("Surabaya", "Yogyakarta", 55);
+
+    tambahJalur("Denpasar", "Makassar", 90);
+    tambahJalur("Denpasar", "Yogyakarta", 80);
+
+    tambahJalur("Medan", "Pekanbaru", 65);
+    tambahJalur("Medan", "Padang", 70);
+
+    tambahJalur("Makassar", "Balikpapan", 65);
+
+    tambahJalur("Yogyakarta", "Semarang", 40);
+    tambahJalur("Yogyakarta", "Balikpapan", 90);
 }
 
 
@@ -201,7 +320,6 @@ void cariPesawat(string target, int tipe) {
                 cout << "Harga Tiket: " << pesawat[i].harga_tiket << endl;
                 cout << "Destinasi Pesawat: " << pesawat[i].destinasi << endl; 
                 ditemukan = true;
-                break;        // Keluar dari loop setelah menemukan pesawat pertama
             }
         }
         if (!ditemukan) {     // Jika tidak ditemukan setelah seluruh pencarian
@@ -330,7 +448,7 @@ void pesanTiket(Tiket*& tiket) {
     Pesawat p = pesawat[idPesawat - 1]; // Ambil data pesawat berdasarkan ID (index = ID-1)
     // Membuat node tiket baru menggunakan dynamic memory allocation
     Tiket* baru = new Tiket;
-    baru->id = count++;         // Generate ID tiket dari 1 sampai sekian
+    baru->id = ticketCounter++;         // Generate ID tiket dari 1 sampai sekian
     baru->nama_penumpang = namaPenumpang; // Isi nama penumpang
     baru->nama_pesawat = p.nama;          // Isi nama pesawat
     baru->destinasi = p.destinasi;        // Isi destinasi
@@ -537,6 +655,7 @@ int main() {
                 {
                 string dari, ke;
                 cout << "Dari Asal" << endl;
+                cin.ignore();
                 getline(cin, dari);
                 cout << "Ke destinasi" << endl;
                 getline(cin, ke);
