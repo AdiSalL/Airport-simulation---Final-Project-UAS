@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
-
+#include <vector>
+#include <unordered_map>
 
 using namespace std;
 
@@ -16,13 +17,12 @@ int count = 1; // dipakai di pesan tiket sebagai id
 
 // Struktur untuk menyimpan informasi pesawat
 // Ini merepresentasikan setiap penerbangan/pesawat dalam sistem
-struct Pesawat
+
+struct Jalur
 {
-    int id;                    // Pengenal unik untuk setiap pesawat
-    string nama;               // Nama maskapai/pesawat
-    int jam_penerbangan;       // Waktu keberangkatan (disimpan sebagai integer, misal: 1030 untuk jam 10:30)
-    string destinasi;          // Kota/bandara tujuan
-    int harga_tiket;          // Harga tiket
+    /* data */
+    string tujuan;
+    int waktu;
 };
 
 // Struk untuk sistem pemesanan tiket menggunakan linked list
@@ -36,19 +36,40 @@ struct Tiket {
     Tiket* next;              // Pointer ke tiket berikutnya dalam linked list
 };
 
+
+struct Pesawat
+{
+    int id;                    // Pengenal unik untuk setiap pesawat
+    string nama;               // Nama maskapai/pesawat
+    int jam_penerbangan;       // Waktu keberangkatan (disimpan sebagai integer, misal: 1030 untuk jam 10:30)
+    int harga_tiket;          // Harga tiket
+    string destinasi;
+};
+
+
+Pesawat pesawat[MAX_JADWAL]; //deklarasi array of struct untuk menyimpan pesawat
+//Graph data jalur pesawat
+unordered_map<string, vector<Jalur>> jalurPesawat;  // simpan pesawat pada edge tertentu
+
+//Disini graph dipakai untuk menghubungkan dari asal mana dan akan kemana
+void tambahJalur(string dari, string ke, int waktu) {
+    jalurPesawat[dari].push_back({ke, waktu});
+    jalurPesawat[ke].push_back({dari, waktu});
+}
+
+// menampilkan semua data dari graph assal dan tujuan
+void tampilkanRuteTercepat(string asal, string tujuan) {
+
+}
+
 // Fungsi untuk menginisialisasi sistem antrian pesawat
 // Mengatur nilai awal head dan tail ke 0 (antrian kosong)
 // Parameter: array pesawat dan pointer tiket (pass by reference)
-void init(Pesawat pesawat[], Tiket*& tiket) {
-    head = 0;                 // Mengatur posisi depan antrian ke 0
-    tail = 0;                 // Mengatur posisi belakang antrian ke 0
-    tiket = nullptr;          // Menginisialisasi pointer tiket ke null
-}
 
 // Fungsi untuk mengecek apakah antrian pesawat kosong atau tidak
 // Return: true jika kosong, false jika ada pesawat
 // Parameter: array pesawat
-bool kosong(Pesawat pesawat[]) {
+bool kosong() {
     if(tail == 0) {           // Jika tail = 0, berarti tidak ada pesawat dalam antrian
         cout << "Tidak ada penerbangan" << endl;
         return true;
@@ -60,7 +81,7 @@ bool kosong(Pesawat pesawat[]) {
 // Fungsi untuk mengecek apakah antrian pesawat sudah penuh atau belum
 // Return: true jika penuh, false jika masih ada tempat
 // Parameter: array pesawat
-bool penuh(Pesawat pesawat[]) {
+bool penuh() {
     if(tail == MAX_JADWAL) {  // Jika tail sama dengan batas maksimal, berarti penuh
         cout << "Bandara sudah penuh" << endl;
         return true;
@@ -72,8 +93,8 @@ bool penuh(Pesawat pesawat[]) {
 // Fungsi untuk menampilkan semua data penerbangan pesawat yang tersedia
 // Melakukan iterasi melalui seluruh array pesawat dari index 0 sampai tail-1
 // Parameter: array pesawat
-void lihatDataPesawat(Pesawat pesawat[]) {
-    if(!kosong(pesawat)) {    // Jika antrian tidak kosong
+void lihatDataPesawat() {
+    if(!kosong()) {    // Jika antrian tidak kosong
         cout << "\n=== DATA PENERBANGAN ===\n";
         // Melakukan perulangan untuk menampilkan semua pesawat
         for(int i = 0; i < tail; i++) {
@@ -92,8 +113,8 @@ void lihatDataPesawat(Pesawat pesawat[]) {
 // Fungsi untuk menambahkan pesawat baru ke dalam antrian
 // Menggunakan konsep enqueue - menambah elemen di bagian belakang antrian
 // Parameter: array pesawat, nama maskapai, jam penerbangan, harga tiket, destinasi
-void masukkanPesawat(Pesawat pesawat[], string nama, int jam_penerbangan, int harga, string destinasi) {
-    if(penuh(pesawat)) {      // Cek apakah antrian sudah penuh
+void masukkanPesawat(string nama, int jam_penerbangan, int harga, string destinasi) {
+    if(penuh()) {      // Cek apakah antrian sudah penuh
         return;               // Jika penuh, keluar dari fungsi
     }
 
@@ -107,11 +128,26 @@ void masukkanPesawat(Pesawat pesawat[], string nama, int jam_penerbangan, int ha
     cout << "Pesawat berhasil ditambahkan!" << endl;
 }
 
+void init(Tiket*& tiket) {
+    head = 0;                 // Mengatur posisi depan antrian ke 0
+    tail = 0;                 // Mengatur posisi belakang antrian ke 0
+    tiket = nullptr;          // Menginisialisasi pointer tiket ke null
+
+    masukkanPesawat("Garuda Indonesia", 1200, 1200000, "Jakarta");
+    masukkanPesawat("Cittilink", 100, 2000000, "Jogjakarta");
+    masukkanPesawat("Air Asia", 1000, 3200000, "Bali");
+    
+    tambahJalur("Jakarta", "Bali", 320);
+    tambahJalur("Bali", "Jogjakarta", 320);
+    tambahJalur("Jogjakarta", "Bali", 320);
+}
+
+
 // Fungsi untuk memberangkatkan pesawat (dequeue operation)
 // Mengurutkan pesawat berdasarkan jam keberangkatan, lalu memberangkatkan yang paling awal
 // Parameter: array pesawat
-void landingkanPesawat(Pesawat pesawat[]) {
-    if(kosong(pesawat)) {     // Cek apakah ada pesawat dalam antrian
+void berangkatKanPesawat() {
+    if(kosong()) {     // Cek apakah ada pesawat dalam antrian
         return;               // Jika kosong, keluar dari fungsi
     }
     
@@ -145,8 +181,8 @@ void landingkanPesawat(Pesawat pesawat[]) {
 // Fungsi untuk mencari pesawat berdasarkan kriteria tertentu (searching)
 // Menggunakan linear search untuk mencari pesawat
 // Parameter: array pesawat, string target pencarian, tipe pencarian (1=nama, 2=destinasi)
-void cariPesawat(Pesawat pesawat[], string target, int tipe) {
-    if(kosong(pesawat)) {     // Cek apakah ada pesawat dalam sistem
+void cariPesawat(string target, int tipe) {
+    if(kosong()) {     // Cek apakah ada pesawat dalam sistem
         return;               // Jika kosong, keluar dari fungsi
     }
     
@@ -203,8 +239,8 @@ void cariPesawat(Pesawat pesawat[], string target, int tipe) {
 // Fungsi untuk mengurutkan pesawat berdasarkan kriteria tertentu (sorting)
 // Menggunakan algoritma insertion sort untuk mengurutkan data
 // Parameter: array pesawat, tipe pengurutan (1=termurah, 2=termahal, 3=keberangkatan tercepat)
-void sortingPesawat(Pesawat pesawat[] ,int tipe) {
-    if(kosong(pesawat)) {     // Cek apakah ada pesawat dalam sistem
+void sortingPesawat(int tipe) {
+    if(kosong()) {     // Cek apakah ada pesawat dalam sistem
         return;               // Jika kosong, keluar dari fungsi
     }
     
@@ -223,7 +259,7 @@ void sortingPesawat(Pesawat pesawat[] ,int tipe) {
             pesawat[j + 1] = key;             // Tempatkan key pada posisi yang tepat
         }
         cout << "\nPesawat diurutkan berdasarkan harga termurah:\n";
-        lihatDataPesawat(pesawat);            // Tampilkan hasil pengurutan
+        lihatDataPesawat();            // Tampilkan hasil pengurutan
         break;
         
     case 2:                   // Urutkan berdasarkan harga tiket termahal (descending)
@@ -240,7 +276,7 @@ void sortingPesawat(Pesawat pesawat[] ,int tipe) {
             pesawat[j + 1] = key;             // Tempatkan key pada posisi yang tepat
         }
         cout << "\nPesawat diurutkan berdasarkan harga termahal:\n";
-        lihatDataPesawat(pesawat);            // Tampilkan hasil pengurutan
+        lihatDataPesawat();            // Tampilkan hasil pengurutan
         break;
         
     case 3:                   // Urutkan berdasarkan keberangkatan paling awal (ascending)
@@ -257,7 +293,7 @@ void sortingPesawat(Pesawat pesawat[] ,int tipe) {
             pesawat[j + 1] = key;             // Tempatkan key pada posisi yang tepat
         }
         cout << "\nPesawat diurutkan berdasarkan jam keberangkatan tercepat:\n";
-        lihatDataPesawat(pesawat);            // Tampilkan hasil pengurutan
+        lihatDataPesawat();            // Tampilkan hasil pengurutan
         break;
         
     default:                  // Jika pilihan tidak valid
@@ -269,15 +305,15 @@ void sortingPesawat(Pesawat pesawat[] ,int tipe) {
 // Fungsi untuk memesan tiket pesawat
 // Menggunakan linked list untuk menyimpan data tiket yang dipesan
 // Parameter: array pesawat, pointer tiket (pass by reference untuk mengubah head linked list)
-void pesanTiket(Pesawat pesawat[], Tiket*& tiket) {
-    if(kosong(pesawat)) {     // Cek apakah ada pesawat tersedia
+void pesanTiket(Tiket*& tiket) {
+    if(kosong()) {     // Cek apakah ada pesawat tersedia
         return;               // Jika tidak ada, keluar dari fungsi
     }
     
     string namaPenumpang;     // Variabel untuk menyimpan nama penumpang
     int idPesawat;            // Variabel untuk menyimpan ID pesawat yang dipilih
     
-    lihatDataPesawat(pesawat); // Tampilkan daftar pesawat yang tersedia
+    lihatDataPesawat(); // Tampilkan daftar pesawat yang tersedia
     cout << "\nMasukkan ID pesawat yang ingin dipesan: ";
     cin >> idPesawat;
     cin.ignore();             // Membersihkan buffer input
@@ -336,7 +372,7 @@ void lihatSemuaTiket(Tiket* tiket) {
     }
 }
 
-void hapusTiket(Pesawat pesawat[], Tiket*& tiket, int target) { // parameter struct pesawat, dereference dari pointer struck tiket, mengambil data target dari user
+void hapusTiket(Tiket*& tiket, int target) { // parameter struct pesawat, dereference dari pointer struck tiket, mengambil data target dari user
     if(tiket == nullptr) {
         cout << "Tidak ada tiket yang bisa dihapus, masih kosong" << endl;
         return;
@@ -374,7 +410,7 @@ void hapusTiket(Pesawat pesawat[], Tiket*& tiket, int target) { // parameter str
 
 // Fungsi utama program - entry point aplikasi
 int main() {
-    Pesawat pesawat[MAX_JADWAL]; // Deklarasi array pesawat dengan ukuran maksimal
+   // Deklarasi array pesawat dengan ukuran maksimal
     Tiket* tiket = nullptr;      // Inisialisasi pointer head linked list tiket
 
     // Variabel untuk input data pesawat
@@ -388,7 +424,7 @@ int main() {
     // Variabel untuk sorting pesawat
     int sortingMenu;
     
-    init(pesawat, tiket);        // Inisialisasi sistem
+    init(tiket);        // Inisialisasi sistem
 
     int pilihan = 0;             // Inisialisasi variabel pilihan menu
     
@@ -399,9 +435,10 @@ int main() {
     system("cls");         
 
     // Menampilkan menu utama aplikasi
-    cout << "Selamat datang di aplikasi pengelolaan bandara AMIKOM YOGYAKARTA" << endl;
+    cout << "****Selamat datang di aplikasi pengelolaan bandara AMIKOM YOGYAKARTA*****" << endl;
+    cout << "****Bandara ini menyediakan layanan penerbangan antar provinsi di indonesia******" << endl;
     cout << "*******************************************" << endl;
-    cout << "1. Lihat semua penerbangan " << endl;
+    cout << "1. Lihat semua pesawat " << endl;
     cout << "2. Tambah Pesawat " << endl;
     cout << "3. Cari Pesawat" << endl;
     cout << "4. Urutkan Pesawat" << endl;
@@ -409,14 +446,16 @@ int main() {
     cout << "6. Pesan Tiket" << endl;
     cout << "7. Lihat Semua Tiket" << endl;
     cout << "8. Hapus Tiket" << endl;
-    cout << "9. Keluar Aplikasi" << endl;
+    cout << "9. Tambah Rute Penerbangan" << endl;
+    cout << "10. Rekomendasi Rute Penerbangan" << endl;
+    cout << "11. Keluar Aplikasi" << endl;
     cout << "Masukkan Pilihan: ";
     cin >> pilihan;
 
     // Switch case untuk menangani pilihan menu user
     switch (pilihan) {
         case 1: // Menampilkan semua data penerbangan
-            lihatDataPesawat(pesawat);
+            lihatDataPesawat();
             break;
             
         case 2: // Menambah pesawat baru
@@ -430,7 +469,7 @@ int main() {
             cout << "Masukkan tujuan destinasi: ";
             cin.ignore();                    // Membersihkan buffer
             getline(cin, destinasi);         // Input destinasi dengan spasi
-            masukkanPesawat(pesawat, nama, jam, harga, destinasi);
+            masukkanPesawat(nama, jam, harga, destinasi);
             break;
             
         case 3: // Mencari pesawat
@@ -446,7 +485,7 @@ int main() {
                 cout << "Input tidak boleh kosong!" << endl;
                 break;
             }
-            cariPesawat(pesawat, targetCari, cariMenu);
+            cariPesawat( targetCari, cariMenu);
             break;
             
         case 4: // Mengurutkan pesawat
@@ -456,15 +495,15 @@ int main() {
             cout << "3. Keberangkatan paling awal" << endl;
             cout << "Masukkan pilihan: ";
             cin >> sortingMenu;
-            sortingPesawat(pesawat, sortingMenu);
+            sortingPesawat( sortingMenu);
             break;
             
         case 5: // Memberangkatkan pesawat
-            landingkanPesawat(pesawat);
+            berangkatKanPesawat();
             break;
             
         case 6: // Memesan tiket
-            pesanTiket(pesawat, tiket);
+            pesanTiket( tiket);
             break;
             
         case 7: // Melihat semua tiket yang dipesan
@@ -476,8 +515,35 @@ int main() {
             lihatSemuaTiket(tiket);
             cout << "Masukkan ID tiket yang ingin dihapus" << endl;
             cin >> idTarget; // mengambil id target tiket yang ingin dihapus
-            hapusTiket(pesawat, tiket, idTarget);
-        case 9: // Keluar dari aplikasi
+            hapusTiket( tiket, idTarget);
+
+            case 9:    
+
+                {
+                    string dari, ke;
+                    int waktu;
+                    cout << "Masukkan asal penerbangan: ";
+                    cin.ignore();
+                    getline(cin, dari);
+                    cout << "Masukkan tujuan penerbangan: ";
+                    getline(cin, ke);;
+                    cout << "Masukkan waktu tempuh (menit): ";
+                    cin >> waktu;
+                    tambahJalur(dari, ke, waktu);
+                }
+                break;
+
+            case 10:
+                {
+                string dari, ke;
+                cout << "Dari Asal" << endl;
+                getline(cin, dari);
+                cout << "Ke destinasi" << endl;
+                getline(cin, ke);
+                tampilkanRuteTercepat(dari, ke);
+                }
+                break;
+        case 11: // Keluar dari aplikasi
             cout << "Keluar dari aplikasi..." << endl;
             break;
             
