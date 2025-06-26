@@ -6,6 +6,7 @@
 #include <climits>
 #include <stack>
 #include <algorithm>
+#include <iomanip>
 
 
 using namespace std;
@@ -53,6 +54,82 @@ struct Pesawat
 
 
 Pesawat pesawat[MAX_JADWAL]; //deklarasi array of struct untuk menyimpan pesawat
+
+// Fungsi untuk menginisialisasi sistem antrian pesawat
+// Mengatur nilai awal head dan tail ke 0 (antrian kosong)
+// Parameter: array pesawat dan pointer tiket (pass by reference)
+
+// Fungsi untuk mengecek apakah antrian pesawat kosong atau tidak
+// Return: true jika kosong, false jika ada pesawat
+// Parameter: array pesawat
+bool kosong() {
+    if(tail == 0) {           // Jika tail = 0, berarti tidak ada pesawat dalam antrian
+        cout << "Tidak ada penerbangan" << endl;
+        return true;
+    }else {
+        return false;
+    }
+}
+
+// Fungsi untuk mengecek apakah antrian pesawat sudah penuh atau belum
+// Return: true jika penuh, false jika masih ada tempat
+// Parameter: array pesawat
+bool penuh() {
+    if(tail == MAX_JADWAL) {  // Jika tail sama dengan batas maksimal, berarti penuh
+        cout << "Bandara sudah penuh" << endl;
+        return true;
+    }else {
+        return false;
+    }
+}
+
+// Fungsi untuk menampilkan semua data penerbangan pesawat yang tersedia
+// Melakukan iterasi melalui seluruh array pesawat dari index 0 sampai tail-1
+// Parameter: array pesawat
+void lihatDataPesawat() {
+    if(!kosong()) {    // Jika antrian tidak kosong
+        cout << setw(25) <<"\n=== DATA PENERBANGAN ===\n";
+        // Melakukan perulangan untuk menampilkan semua pesawat
+        for(int i = 0; i < tail; i++) {
+            if (i == 0) {
+                cout << left
+                     << setw(5) << "ID"
+                     << setw(25) << "Nama"
+                     << setw(15) << "Jam"
+                     << setw(15) << "Harga"
+                     << setw(20) << "Destinasi" << endl;
+                cout << string(80, '-') << endl;
+            }
+            cout << left
+                 << setw(5) << pesawat[i].id
+                 << setw(25) << pesawat[i].nama
+                 << setw(15) << (to_string(pesawat[i].jam_penerbangan) + " WIB")
+                 << setw(15) << pesawat[i].harga_tiket
+                 << setw(20) << pesawat[i].destinasi << endl;
+        }
+    }else {
+        cout << "***Pesawat Masih Kosong***" << endl;
+    }
+}
+
+// Fungsi untuk menambahkan pesawat baru ke dalam antrian
+// Menggunakan konsep enqueue - menambah elemen di bagian belakang antrian
+// Parameter: array pesawat, nama maskapai, jam penerbangan, harga tiket, destinasi
+void masukkanPesawat(string nama, int jam_penerbangan, int harga, string destinasi) {
+    if(penuh()) {      // Cek apakah antrian sudah penuh
+        return;               // Jika penuh, keluar dari fungsi
+    }
+
+    // Mengisi data pesawat baru pada posisi tail
+    pesawat[tail].nama = nama;
+    pesawat[tail].jam_penerbangan = jam_penerbangan;
+    pesawat[tail].harga_tiket = harga;
+    pesawat[tail].destinasi = destinasi;
+    pesawat[tail].id = tail + 1;  // ID dimulai dari 1, bukan 0
+    tail++;                   // Increment tail untuk menunjuk ke posisi berikutnya
+    cout << "Pesawat berhasil ditambahkan!" << endl;
+}
+
 //Graph data jalur pesawat
 unordered_map<string, vector<Jalur>> jalurPesawat;  // simpan jalur pesawat pada edge tertentu
 
@@ -148,71 +225,6 @@ void tampilkanRuteTercepat(string asal, string tujuan) {
 }
 
 
-// Fungsi untuk menginisialisasi sistem antrian pesawat
-// Mengatur nilai awal head dan tail ke 0 (antrian kosong)
-// Parameter: array pesawat dan pointer tiket (pass by reference)
-
-// Fungsi untuk mengecek apakah antrian pesawat kosong atau tidak
-// Return: true jika kosong, false jika ada pesawat
-// Parameter: array pesawat
-bool kosong() {
-    if(tail == 0) {           // Jika tail = 0, berarti tidak ada pesawat dalam antrian
-        cout << "Tidak ada penerbangan" << endl;
-        return true;
-    }else {
-        return false;
-    }
-}
-
-// Fungsi untuk mengecek apakah antrian pesawat sudah penuh atau belum
-// Return: true jika penuh, false jika masih ada tempat
-// Parameter: array pesawat
-bool penuh() {
-    if(tail == MAX_JADWAL) {  // Jika tail sama dengan batas maksimal, berarti penuh
-        cout << "Bandara sudah penuh" << endl;
-        return true;
-    }else {
-        return false;
-    }
-}
-
-// Fungsi untuk menampilkan semua data penerbangan pesawat yang tersedia
-// Melakukan iterasi melalui seluruh array pesawat dari index 0 sampai tail-1
-// Parameter: array pesawat
-void lihatDataPesawat() {
-    if(!kosong()) {    // Jika antrian tidak kosong
-        cout << "\n=== DATA PENERBANGAN ===\n";
-        // Melakukan perulangan untuk menampilkan semua pesawat
-        for(int i = 0; i < tail; i++) {
-            cout << "ID: " << pesawat[i].id << endl;
-            cout << "Nama: " << pesawat[i].nama << endl;
-            cout << "Jam Penerbangan: " << pesawat[i].jam_penerbangan << " WIB"<< endl;
-            cout << "Harga Tiket: " << pesawat[i].harga_tiket << endl;
-            cout << "Destinasi Pesawat: " << pesawat[i].destinasi << endl;
-            cout << "-------------------------\n";
-        }
-    }else {
-        cout << "***Pesawat Masih Kosong***" << endl;
-    }
-}
-
-// Fungsi untuk menambahkan pesawat baru ke dalam antrian
-// Menggunakan konsep enqueue - menambah elemen di bagian belakang antrian
-// Parameter: array pesawat, nama maskapai, jam penerbangan, harga tiket, destinasi
-void masukkanPesawat(string nama, int jam_penerbangan, int harga, string destinasi) {
-    if(penuh()) {      // Cek apakah antrian sudah penuh
-        return;               // Jika penuh, keluar dari fungsi
-    }
-
-    // Mengisi data pesawat baru pada posisi tail
-    pesawat[tail].nama = nama;
-    pesawat[tail].jam_penerbangan = jam_penerbangan;
-    pesawat[tail].harga_tiket = harga;
-    pesawat[tail].destinasi = destinasi;
-    pesawat[tail].id = tail + 1;  // ID dimulai dari 1, bukan 0
-    tail++;                   // Increment tail untuk menunjuk ke posisi berikutnya
-    cout << "Pesawat berhasil ditambahkan!" << endl;
-}
 
 void init(Tiket*& tiket) {
     head = 0;                 // Mengatur posisi depan antrian ke 0
@@ -555,7 +567,8 @@ int main() {
     // Menampilkan menu utama aplikasi
     cout << "****Selamat datang di aplikasi pengelolaan bandara AMIKOM YOGYAKARTA*****" << endl;
     cout << "****Bandara ini menyediakan layanan penerbangan antar provinsi di indonesia******" << endl;
-    cout << "*******************************************" << endl;
+    cout << "___________________________________________________________________________________" << endl;
+    cout << endl;
     cout << "1. Lihat semua pesawat " << endl;
     cout << "2. Tambah Pesawat " << endl;
     cout << "3. Cari Pesawat" << endl;
@@ -567,7 +580,8 @@ int main() {
     cout << "9. Tambah Rute Penerbangan" << endl;
     cout << "10. Rekomendasi Rute Penerbangan" << endl;
     cout << "11. Keluar Aplikasi" << endl;
-    cout << "Masukkan Pilihan: ";
+    cout << "Masukkan Pilihan: " << endl;
+    cout << endl;
     cin >> pilihan;
 
     // Switch case untuk menangani pilihan menu user
