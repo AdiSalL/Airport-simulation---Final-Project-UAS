@@ -1,0 +1,8 @@
+{
+  "files.associations": {
+    "*.dbclient-js": "javascript",
+    "cmath": "cpp",
+    "iostream": "cpp",
+    "xiosbase": "cpp"
+  }
+}
